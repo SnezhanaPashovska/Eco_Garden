@@ -2,43 +2,62 @@
 
 namespace App\DataFixtures;
 
-use App\Entity\Advice;
-use App\Entity\Month;
+use App\Entity\User;
+use App\Factory\AdviceFactory;
+use App\Factory\MonthFactory;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
-use Faker\Factory as FakerFactory;
+use Faker\Factory;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
+    private $userPasswordHasher;
+
+    public function __construct(UserPasswordHasherInterface $userPasswordHasher)
+    {
+        $this->userPasswordHasher = $userPasswordHasher;
+    }
+
     public function load(ObjectManager $manager): void
     {
-        // Générer les mois
-        $faker = FakerFactory::create('fr_FR'); // French locale for month names
-        $months = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $month = new Month();
-            $month->setName($faker->monthName); // Generate random month names
-            $month->setMonthNumber($i); // Assign the correct month number (1 to 12)
-
-            $months[$i] = $month; // Store for later use if needed
-
-            $manager->persist($month); // Persist to the database
+        $faker = Factory::create(); // Initialize Faker
+        // Création d'un user "normal"
+        for ($i = 0; $i < 5; $i++) {
+            $user = new User();
+            $user->setEmail($faker->email());
+            $user->setRoles(["ROLE_USER"]);
+            $user->setPassword($this->userPasswordHasher->hashPassword($user, "password"));
+            $user->setCity($faker->city());
+            $manager->persist($user);
         }
 
-        for ($i = 0; $i < 30; $i++) {
-            $advice = new Advice();
-            $advice->setContent($faker->sentence);
+        // Création d'un user admin
+        $userAdmin = new User();
+        $userAdmin->setEmail("admin@ecogarden.com");
+        $userAdmin->setRoles(["ROLE_ADMIN"]);
+        $userAdmin->setPassword($this->userPasswordHasher->hashPassword($userAdmin, "password"));
+        $userAdmin->setCity($faker->city());
+        $manager->persist($userAdmin);
 
-            // Assign random months
+        // Generate months
+        $months = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $month = MonthFactory::createSpecificMonth($i);
+            $months[$i] = $month; // Stocker chaque mois dans un tableau indexé par son numéro
+        }
+
+        // generate advices
+        $advices = AdviceFactory::createMany(50, function () use ($months) {
             $randomMonths = array_rand($months, random_int(1, 12));
             if (!is_array($randomMonths)) {
                 $randomMonths = [$randomMonths];
             }
 
-            foreach ($randomMonths as $monthIndex) {
-                $advice->addMonth($months[$monthIndex]);
-            }
-        }
+            return [
+                'months' => array_map(fn($monthNumber) => $months[$monthNumber], $randomMonths),
+            ];
+        });
 
         $manager->flush();
     }

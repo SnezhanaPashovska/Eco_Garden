@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: MonthRepository::class)]
 class Month
@@ -14,18 +15,22 @@ class Month
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups('advice', 'month')]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups('advice', 'month')]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::SMALLINT)]
+    #[Groups('advice', 'month')]
     private ?int $month_number = null;
 
     /**
      * @var Collection<int, Advice>
      */
     #[ORM\ManyToMany(targetEntity: Advice::class, inversedBy: 'months', cascade: ['persist'])]
+    #[ORM\JoinTable(name: 'month_advice')]
     private Collection $advice;
 
     public function __construct()
