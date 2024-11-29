@@ -15,18 +15,18 @@ class Advice
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups('advice')]
+    #[Groups('advice','advice_detail')]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups('advice')]
+    #[Groups('advice', 'advice_detail')]
     private ?string $content = null;
 
     /**
      * @var Collection<int, Month>
      */
     #[ORM\ManyToMany(targetEntity: Month::class, inversedBy: 'advice')]
-    #[Groups('advice', 'months')]
+    #[Groups('advice', 'months', 'advice_detail')]
     private Collection $months;
 
     public function __construct()

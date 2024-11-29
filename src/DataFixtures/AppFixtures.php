@@ -48,7 +48,7 @@ class AppFixtures extends Fixture
         }
 
         // generate advices
-        $advices = AdviceFactory::createMany(50, function () use ($months) {
+        $advices = AdviceFactory::createMany(20, function () use ($months) {
             $randomMonths = array_rand($months, random_int(1, 12));
             if (!is_array($randomMonths)) {
                 $randomMonths = [$randomMonths];
