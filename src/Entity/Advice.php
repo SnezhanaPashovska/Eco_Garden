@@ -25,15 +25,15 @@ class Advice
     /**
      * @var Collection<int, Month>
      */
-    #[ORM\ManyToMany(targetEntity: Month::class, mappedBy: 'advice')]
-    #[Groups('advice')]
+    #[ORM\ManyToMany(targetEntity: Month::class, inversedBy: 'advice')]
+    #[Groups('advice', 'months')]
     private Collection $months;
 
     public function __construct()
     {
         $this->months = new ArrayCollection();
     }
-
+    #[Groups('advice')]
     public function getId(): ?int
     {
         return $this->id;
@@ -57,6 +57,11 @@ class Advice
     public function getMonths(): Collection
     {
         return $this->months;
+    }
+
+    public function setMonths(Collection $months): void
+    {
+        $this->months = $months;
     }
 
     public function addMonth(Month $month): static

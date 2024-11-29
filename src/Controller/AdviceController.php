@@ -12,7 +12,8 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 class AdviceController extends AbstractController
 {
-    #[Route('/api/advice/', name: 'currentMonthAdvice', methods: ['GET'])]
+    //Get advice for the current month by dynamically filtering the months collection before serialization.
+    #[Route('/api/advice', name: 'currentMonthAdvice', methods: ['GET'])]
     public function getAdviceForCurrentMonth(AdviceRepository $adviceRepository, SerializerInterface $serializer): JsonResponse
     {
         $currentMonthNumber = (int) date('n'); // Get the current month number (1-12)
@@ -20,36 +21,35 @@ class AdviceController extends AbstractController
         $advices = $adviceRepository->findAll();
 
         $filteredAdvices = array_map(function ($advice) use ($currentMonthNumber) {
-            $filteredMonths = $advice->getMonths()->filter(
-                fn($month) => $month->getMonthNumber() === $currentMonthNumber
+            $filteredMonths = $advice->getMonths()->filter(fn($month) => $month->getMonthNumber() === $currentMonthNumber
             );
 
             if ($filteredMonths->isEmpty()) {
                 return null;
             }
 
-            $adviceArray = [
-                'id' => $advice->getId(),
-                'content' => $advice->getContent(),
-                'months' => array_values(array_map(function ($month) {
-                    return [
-                        'id' => $month->getId(),
-                        'name' => $month->getName(),
-                        'month_number' => $month->getMonthNumber(),
-                    ];
-                }, $filteredMonths->toArray())),
-            ];
+            $clonedAdvice = clone $advice;
+            $clonedAdvice->setMonths($filteredMonths);
 
-            return $adviceArray;
-        }, $advices);
+            return $clonedAdvice;
+        },
+            $advices);
 
         $filteredAdvices = array_filter($filteredAdvices);
 
-        $jsonContent = $serializer->serialize(array_values($filteredAdvices), 'json');
+        $jsonContent = $serializer->serialize(array_values($filteredAdvices), 'json', ['groups' => 'advice']);
+
+        $data = json_decode($jsonContent, true);
+
+        foreach ($data as &$advice) {
+            $advice['months'] = array_values($advice['months']);
+        }
+
+        $jsonContent = json_encode($data);
 
         return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
     }
-
+    //Get advice for a selected month 
     #[Route('/api/advice/{month}', name: 'selectedMonthAdvice', methods: ['GET'])]
     public function getAdviceByMonth(int $month, AdviceRepository $adviceRepository, MonthRepository $monthRepository, SerializerInterface $serializer): JsonResponse
     {
@@ -65,17 +65,24 @@ class AdviceController extends AbstractController
             return new JsonResponse(['message' => 'No advice found for this month'], Response::HTTP_NOT_FOUND);
         }
 
-        $filteredAdvices = array_map(function ($advice) use ($month) {
-            return [
-                'id' => $advice->getId(),
-                'content' => $advice->getContent(),
-                'month_number' => $month,
-            ];
-        }, $advices);
+        foreach ($advices as $advice) {
+            $advice->setMonths($advice->getMonths()->filter(function ($monthEntity) use ($month) {
+                return $monthEntity->getMonthNumber() === $month;
+            })
+            );
+        }
 
-        $jsonAdvices = $serializer->serialize($filteredAdvices, 'json');
+        $jsonAdvices = $serializer->serialize($advices, 'json', ['groups' => ['advice', 'months']]);
+        $data = json_decode($jsonAdvices, true);
+
+        foreach ($data as &$advice) {
+            $advice['months'] = array_values($advice['months']);
+        }
+
+        $jsonAdvices = json_encode($data);
 
         return new JsonResponse($jsonAdvices, Response::HTTP_OK, [], true);
     }
 
+    
 }

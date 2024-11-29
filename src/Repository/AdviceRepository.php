@@ -17,15 +17,18 @@ class AdviceRepository extends ServiceEntityRepository
         parent::__construct($registry, Advice::class);
     }
 
+    // src/Repository/AdviceRepository.php
+
     public function findAdvicesForMonth(Month $month): array
     {
         return $this->createQueryBuilder('a')
             ->join('a.months', 'm')
-            ->where('m.month_number = :monthNumber')
-            ->setParameter('monthNumber', $month->getMonthNumber())
+            ->where('m.id = :monthId')
+            ->setParameter('monthId', $month->getId())
             ->getQuery()
             ->getResult();
     }
+
     //    /**
     //     * @return Advice[] Returns an array of Advice objects
     //     */

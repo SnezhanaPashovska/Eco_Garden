@@ -15,22 +15,23 @@ class Month
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups('advice', 'month')]
+    #[Groups('advice', 'months')]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups('advice', 'month')]
+    #[Groups('advice', 'months')]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::SMALLINT)]
-    #[Groups('advice', 'month')]
+    #[Groups('advice', 'months')]
     private ?int $month_number = null;
 
     /**
      * @var Collection<int, Advice>
      */
-    #[ORM\ManyToMany(targetEntity: Advice::class, inversedBy: 'months', cascade: ['persist'])]
-    #[ORM\JoinTable(name: 'month_advice')]
+    #[ORM\ManyToMany(targetEntity: Advice::class, mappedBy: 'months')]
+    //#[ORM\JoinTable(name: 'month_advice')]
+    #[Groups(['month'])]
     private Collection $advice;
 
     public function __construct()
@@ -79,6 +80,7 @@ class Month
     {
         if (!$this->advice->contains($advice)) {
             $this->advice->add($advice);
+            $advice->addMonth($this);
         }
 
         return $this;
@@ -86,7 +88,9 @@ class Month
 
     public function removeAdvice(Advice $advice): static
     {
-        $this->advice->removeElement($advice);
+        if ($this->advice->removeElement($advice)) {
+            $advice->removeMonth($this);
+        }
 
         return $this;
     }
