@@ -128,8 +128,7 @@ class AdviceController extends AbstractController
         $em->persist($advice);
         $em->flush();
 
-        $location = $urlGenerator->generate('getAdvice', ['id' => $advice->getId()], UrlGeneratorInterface::ABSOLUTE_URL
-        );
+        $location = $urlGenerator->generate('getAdvice', ['id' => $advice->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
         $jsonContent = $serializer->serialize($advice, 'json', ['groups' => ['advice', 'advice_detail']]);
 
@@ -143,7 +142,6 @@ class AdviceController extends AbstractController
     #[Route('/api/advice/{id}', name: 'updateAdvice', methods: ['PUT'])]
     public function updateAdvice(Request $request, SerializerInterface $serializer, Advice $currentAdvice, EntityManagerInterface $em, MonthRepository $monthRepository): JsonResponse
     {
-
         $updatedAdvice = $serializer->deserialize($request->getContent(),
             Advice::class, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $currentAdvice]);
         $content = $request->toArray();
@@ -166,7 +164,13 @@ class AdviceController extends AbstractController
         $jsonContent = $serializer->serialize($updatedAdvice, 'json', ['groups' => ['advice', 'advice_detail']]);
 
         return new JsonResponse($jsonContent, JsonResponse::HTTP_OK, [], true);
-
     }
 
+    #[Route('/api/advice/{id}', name: 'deleteAdvice', methods: ['DELETE'])]
+    public function deleteAdvice(Advice $advice, EntityManagerInterface $em): JsonResponse
+    {
+        $em->remove($advice);
+        $em->flush();
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
 }
