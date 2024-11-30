@@ -72,4 +72,40 @@ class UserController extends AbstractController
 
         return new JsonResponse($responseArray, Response::HTTP_CREATED, ['Location' => $location]);
     }
+
+    #[Route('/api/users/{id}', name: 'updateUser', methods: ['PUT'])]
+    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser,
+        EntityManagerInterface $em, UserPasswordHasherInterface $hasher): JsonResponse {
+
+        $data = json_decode($request->getContent(), true);
+
+        // Validate input
+        if (isset($data['email'])) {
+            $currentUser->setEmail($data['email']);
+        }
+
+        if (isset($data['password']) && !empty($data['password'])) {
+            $hashedPassword = $hasher->hashPassword($currentUser, $data['password']);
+            $currentUser->setPassword($hashedPassword);
+        }
+
+        if (isset($data['city'])) {
+            $currentUser->setCity($data['city']);
+        }
+
+        $em->flush();
+
+        $jsonContent = $serializer->serialize($currentUser, 'json');
+
+        return new JsonResponse($jsonContent, JsonResponse::HTTP_OK, [], true);
+    }
+
+    #[Route('/api/users/{id}', name: 'deleteUser', methods: ['DELETE'])]
+    public function deleteUser(User $user, EntityManagerInterface $em): JsonResponse
+    {
+        $em->remove($user);
+        $em->flush();
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
+
 }
