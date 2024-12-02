@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 
@@ -99,6 +100,7 @@ class AdviceController extends AbstractController
 
     // Create an advice
     #[Route('/api/advice', name: "createAdvice", methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour ajouter un conseil')]
     public function createAdvice(Request $request, SerializerInterface $serializer, MonthRepository $monthRepository, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -140,6 +142,7 @@ class AdviceController extends AbstractController
     //Update the advice
 
     #[Route('/api/advice/{id}', name: 'updateAdvice', methods: ['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour mettre à jour ce conseil')]
     public function updateAdvice(Request $request, SerializerInterface $serializer, Advice $currentAdvice, EntityManagerInterface $em, MonthRepository $monthRepository): JsonResponse
     {
         $updatedAdvice = $serializer->deserialize($request->getContent(),
@@ -167,6 +170,7 @@ class AdviceController extends AbstractController
     }
 
     #[Route('/api/advice/{id}', name: 'deleteAdvice', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour mettre à jour ce conseil')]
     public function deleteAdvice(Advice $advice, EntityManagerInterface $em): JsonResponse
     {
         $em->remove($advice);

@@ -23,10 +23,10 @@ security:
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
         login:
-            pattern: ^/api/login
+            pattern: ^/auth
             stateless: true
             json_login:
-                check_path: /api/login_check
+                check_path: /auth
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
         api:
@@ -37,8 +37,20 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-         - { path: ^/api/login, roles: PUBLIC_ACCESS }
+         # Routes accessible without authentication
+         - { path: ^/auth, roles: PUBLIC_ACCESS }
          - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+         
+         # Routes accessible to authenticated users (including admins)
+         - { path: ^/api/advice, roles: IS_AUTHENTICATED_FULLY }  # Authenticated users can access /advice
+         - { path: ^/api/advice/\d+, roles: IS_AUTHENTICATED_FULLY }  # Authenticated users can access /advice/{mois}
+
+         # Routes accessible only to admins
+         - { path: ^/api/advice, roles: ROLE_ADMIN }  # Admins can create new advice
+         - { path: ^/api/advice/\d+, roles: ROLE_ADMIN }  # Admins can update or delete advice
+         - { path: ^/api/user/\d+, roles: ROLE_ADMIN }  # Admins can update users
+         - { path: ^/api/user/\d+/delete, roles: ROLE_ADMIN }  # Admins can delete users
+         
 
 when@test:
     security:
