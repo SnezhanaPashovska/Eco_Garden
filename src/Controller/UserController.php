@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -75,7 +77,23 @@ class UserController extends AbstractController
 
     #[Route('/api/users/{id}', name: 'updateUser', methods: ['PUT'])]
     public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser,
-        EntityManagerInterface $em, UserPasswordHasherInterface $hasher): JsonResponse {
+        EntityManagerInterface $em, UserPasswordHasherInterface $hasher, TokenStorageInterface $tokenStorage): JsonResponse {
+
+        $token = $tokenStorage->getToken();
+
+        if (!$token) {
+            throw new AccessDeniedException('No authentication token found.');
+        }
+
+        $authenticatedUser = $token->getUser();
+
+        if (!$authenticatedUser instanceof User) {
+            throw new AccessDeniedException('You must be logged in to perform this action.');
+        }
+
+        if ($authenticatedUser->getId() !== $currentUser->getId()) {
+            return new JsonResponse(['message' => 'You are not allowed to update this user'], JsonResponse::HTTP_FORBIDDEN);
+        }
 
         $data = json_decode($request->getContent(), true);
 
