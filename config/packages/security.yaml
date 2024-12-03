@@ -44,6 +44,7 @@ security:
          # Routes accessible to authenticated users (including admins)
          - { path: ^/api/advice, roles: IS_AUTHENTICATED_FULLY }  # Authenticated users can access /advice
          - { path: ^/api/advice/\d+, roles: IS_AUTHENTICATED_FULLY }  # Authenticated users can access /advice/{mois}
+         - { path: ^/api/external/meteo, roles: ROLE_USER } # Authenticated users can access /external/meteo
 
          # Routes accessible only to admins
          - { path: ^/api/advice, roles: ROLE_ADMIN }  # Admins can create new advice
