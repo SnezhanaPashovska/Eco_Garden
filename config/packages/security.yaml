@@ -39,18 +39,16 @@ security:
     access_control:
          # Routes accessible without authentication
          - { path: ^/auth, roles: PUBLIC_ACCESS }
-         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+         - { path: ^/api/users, roles: PUBLIC_ACCESS }
          
          # Routes accessible to authenticated users (including admins)
-         - { path: ^/api/advice, roles: IS_AUTHENTICATED_FULLY }  # Authenticated users can access /advice
-         - { path: ^/api/advice/\d+, roles: IS_AUTHENTICATED_FULLY }  # Authenticated users can access /advice/{mois}
-         - { path: ^/api/external/meteo, roles: ROLE_USER } # Authenticated users can access /external/meteo
+         - { path: ^/api/conseil, roles: IS_AUTHENTICATED_FULLY }
+         - { path: ^/api/external/meteo, roles: ROLE_USER }
 
          # Routes accessible only to admins
-         - { path: ^/api/advice, roles: ROLE_ADMIN }  # Admins can create new advice
-         - { path: ^/api/advice/\d+, roles: ROLE_ADMIN }  # Admins can update or delete advice
-         - { path: ^/api/user/\d+, roles: ROLE_ADMIN }  # Admins can update users
-         - { path: ^/api/user/\d+/delete, roles: ROLE_ADMIN }  # Admins can delete users
+         - { path: ^/api/conseil, roles: ROLE_ADMIN }
+         - { path: ^/api/users/\d+, roles: ROLE_ADMIN }
+
          
 
 when@test:

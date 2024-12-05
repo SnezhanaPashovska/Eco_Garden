@@ -19,11 +19,10 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 class AdviceController extends AbstractController
 {
-    //Get advice for the current month by dynamically filtering the months collection before serialization.
-    #[Route('/api/advice', name: 'currentMonthAdvice', methods: ['GET'])]
+    #[Route('/api/conseil', name: 'currentMonthAdvice', methods: [Request::METHOD_GET])]
     public function getAdviceForCurrentMonth(AdviceRepository $adviceRepository, SerializerInterface $serializer): JsonResponse
     {
-        $currentMonthNumber = (int) date('n'); // Get the current month number (1-12)
+        $currentMonthNumber = (int) date('n');
 
         $advices = $adviceRepository->findAll();
 
@@ -56,8 +55,8 @@ class AdviceController extends AbstractController
 
         return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
     }
-    //Get advice for a selected month
-    #[Route('/api/advice/{month}', name: 'selectedMonthAdvice', methods: ['GET'])]
+
+    #[Route('/api/conseil/{month}', name: 'selectedMonthAdvice', methods: [Request::METHOD_GET])]
     public function getAdviceByMonth(int $month, AdviceRepository $adviceRepository, MonthRepository $monthRepository, SerializerInterface $serializer): JsonResponse
     {
         $monthEntity = $monthRepository->findOneBy(['month_number' => $month]);
@@ -91,15 +90,14 @@ class AdviceController extends AbstractController
         return new JsonResponse($jsonAdvices, Response::HTTP_OK, [], true);
     }
 
-    #[Route('/api/advice/{id}', name: "getAdvice", methods: ['GET'])]
+    #[Route('/api/conseil/{id}', name: "getAdvice", methods: [Request::METHOD_GET])]
     public function getAdvice(Advice $advice, SerializerInterface $serializer): JsonResponse
     {
         $jsonContent = $serializer->serialize($advice, 'json', ['groups' => ['advice', 'advice_detail']]);
         return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
     }
 
-    // Create an advice
-    #[Route('/api/advice', name: "createAdvice", methods: ['POST'])]
+    #[Route('/api/conseil', name: "createAdvice", methods: [Request::METHOD_POST])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour ajouter un conseil')]
     public function createAdvice(Request $request, SerializerInterface $serializer, MonthRepository $monthRepository, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator): JsonResponse
     {
@@ -139,9 +137,7 @@ class AdviceController extends AbstractController
         return new JsonResponse($responseArray, Response::HTTP_CREATED, ['Location' => $location]);
     }
 
-    //Update the advice
-
-    #[Route('/api/advice/{id}', name: 'updateAdvice', methods: ['PUT'])]
+    #[Route('/api/conseil/{id}', name: 'updateAdvice', methods: [Request::METHOD_PUT])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour mettre à jour ce conseil')]
     public function updateAdvice(Request $request, SerializerInterface $serializer, Advice $currentAdvice, EntityManagerInterface $em, MonthRepository $monthRepository): JsonResponse
     {
@@ -169,7 +165,7 @@ class AdviceController extends AbstractController
         return new JsonResponse($jsonContent, JsonResponse::HTTP_OK, [], true);
     }
 
-    #[Route('/api/advice/{id}', name: 'deleteAdvice', methods: ['DELETE'])]
+    #[Route('/api/conseil/{id}', name: 'deleteAdvice', methods: [Request::METHOD_DELETE])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour mettre à jour ce conseil')]
     public function deleteAdvice(Advice $advice, EntityManagerInterface $em): JsonResponse
     {

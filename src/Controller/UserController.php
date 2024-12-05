@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Finder\Exception\AccessDeniedException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,14 +14,14 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class UserController extends AbstractController
 {
-    #[Route('/api/users', name: 'users', methods: ['GET'])]
+    #[Route('/api/users', name: 'users', methods: [Request::METHOD_GET])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour voir la liste des utilisateurs')]
     public function getUserList(UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
     {
         $userList = $userRepository->findAll();
@@ -28,8 +29,9 @@ class UserController extends AbstractController
         return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
     }
 
-    #[Route('/api/users/{id}', name: 'getUserById', methods: ['GET'])]
-    public function getUserById(int $id, UserRepository $userRepository): JsonResponse
+    #[Route('/api/users/{id}', name: 'getUserById', methods: [Request::METHOD_GET])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour mettre à jour cet utilisateur')]
+    public function getUserById(int $id, UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
     {
         $user = $userRepository->find($id);
 
@@ -37,10 +39,12 @@ class UserController extends AbstractController
             return new JsonResponse(['message' => 'User not found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
-        return new JsonResponse($user, JsonResponse::HTTP_OK);
+        $userJson = $serializer->serialize($user, 'json', ['groups' => 'user']);
+
+        return new JsonResponse($userJson, JsonResponse::HTTP_OK, [], true);
     }
 
-    #[Route('/api/users', name: 'createUser', methods: ['POST'])]
+    #[Route('/api/users', name: 'createUser', methods: [Request::METHOD_POST])]
     public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em,
         UrlGeneratorInterface $urlGenerator, UserPasswordHasherInterface $hasher, ValidatorInterface $validator): JsonResponse {
         $data = json_decode($request->getContent(), true);
@@ -57,7 +61,6 @@ class UserController extends AbstractController
         $hashPassword = $hasher->hashPassword($user, $data['password']);
         $user->setPassword($hashPassword);
 
-        // Validate the user
         $errors = $validator->validate($user);
         if (count($errors) > 0) {
             $errorsString = (string) $errors;
@@ -76,51 +79,44 @@ class UserController extends AbstractController
         return new JsonResponse($responseArray, Response::HTTP_CREATED, ['Location' => $location]);
     }
 
-    #[Route('/api/users/{id}', name: 'updateUser', methods: ['PUT'])]
+    #[Route('/api/users/{id}', name: 'updateUser', methods: [Request::METHOD_PUT])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour mettre à jour cet utilisateur')]
-    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser,
+    public function updateUser(Request $request, SerializerInterface $serializer, User $user,
         EntityManagerInterface $em, UserPasswordHasherInterface $hasher, TokenStorageInterface $tokenStorage): JsonResponse {
 
         $token = $tokenStorage->getToken();
-
-        if (!$token) {
-            throw new AccessDeniedException('No authentication token found.');
+        if (!$token || !$token->getUser() instanceof User) {
+            throw new AccessDeniedException('You must be authenticated as an admin to perform this action.');
         }
 
         $authenticatedUser = $token->getUser();
-
-        if (!$authenticatedUser instanceof User) {
-            throw new AccessDeniedException('You must be logged in to perform this action.');
-        }
-
-        if ($authenticatedUser->getId() !== $currentUser->getId()) {
-            return new JsonResponse(['message' => 'You are not allowed to update this user'], JsonResponse::HTTP_FORBIDDEN);
+        if (!$authenticatedUser->getRoles('ROLE_ADMIN')) {
+            throw new AccessDeniedException('Only administrators can update users.');
         }
 
         $data = json_decode($request->getContent(), true);
 
-        // Validate input
         if (isset($data['email'])) {
-            $currentUser->setEmail($data['email']);
+            $user->setEmail($data['email']);
         }
 
         if (isset($data['password']) && !empty($data['password'])) {
-            $hashedPassword = $hasher->hashPassword($currentUser, $data['password']);
-            $currentUser->setPassword($hashedPassword);
+            $hashedPassword = $hasher->hashPassword($user, $data['password']);
+            $user->setPassword($hashedPassword);
         }
 
         if (isset($data['city'])) {
-            $currentUser->setCity($data['city']);
+            $user->setCity($data['city']);
         }
 
         $em->flush();
 
-        $jsonContent = $serializer->serialize($currentUser, 'json');
+        $jsonContent = $serializer->serialize($user, 'json');
 
         return new JsonResponse($jsonContent, JsonResponse::HTTP_OK, [], true);
     }
 
-    #[Route('/api/users/{id}', name: 'deleteUser', methods: ['DELETE'])]
+    #[Route('/api/users/{id}', name: 'deleteUser', methods: [Request::METHOD_DELETE])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour mettre à jour cet utilisateur')]
     public function deleteUser(User $user, EntityManagerInterface $em): JsonResponse
     {
