@@ -16,19 +16,20 @@ class MeteoController extends AbstractController
 {
 
     #[Route('/api/external/meteo', name: 'meteo', methods: [Request::METHOD_GET])]
+    #[Route('/api/external/meteo/{city}', name: 'meteo_by_city', methods: [Request::METHOD_GET])]
     #[IsGranted('IS_AUTHENTICATED_FULLY', message: 'Vous devez être authentifié pour accéder à cette ressource')]
-    public function getMeteo(HttpClientInterface $httpClient, UserInterface $user): JsonResponse
+    public function getMeteo(HttpClientInterface $httpClient, UserInterface $user, ?string $city = null): JsonResponse
     {
         if (!$user instanceof User) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        $city = $user->getCity();
+        //$userCity = $user->getCity();
+        $city = $city ?: $user->getCity();
 
         if (!$city) {
-            return new JsonResponse(['error' => 'User city not available'], 400);
+            return new JsonResponse(['error' => 'City not available'], 400);
         }
-
         $cache = new FilesystemAdapter();
         $cacheKey = 'weather_' . $city;
 
