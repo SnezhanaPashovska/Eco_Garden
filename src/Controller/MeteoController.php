@@ -24,7 +24,6 @@ class MeteoController extends AbstractController
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        //$userCity = $user->getCity();
         $city = $city ?: $user->getCity();
 
         if (!$city) {
@@ -66,6 +65,7 @@ class MeteoController extends AbstractController
 
             $cachedData->set($weatherInfo);
             $cachedData->expiresAfter(5);
+            //$cachedData->expiresAfter(1800);
             $cache->save($cachedData);
             $cache->clear();
 

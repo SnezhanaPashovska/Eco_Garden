@@ -44,6 +44,8 @@ class UserController extends AbstractController
         return new JsonResponse($userJson, JsonResponse::HTTP_OK, [], true);
     }
 
+    //POST
+
     #[Route('/api/users', name: 'createUser', methods: [Request::METHOD_POST])]
     public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em,
         UrlGeneratorInterface $urlGenerator, UserPasswordHasherInterface $hasher, ValidatorInterface $validator): JsonResponse {

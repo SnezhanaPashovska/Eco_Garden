@@ -30,7 +30,6 @@ class Month
      * @var Collection<int, Advice>
      */
     #[ORM\ManyToMany(targetEntity: Advice::class, mappedBy: 'months')]
-    //#[ORM\JoinTable(name: 'month_advice')]
     #[Groups(['month'])]
     private Collection $advice;
 

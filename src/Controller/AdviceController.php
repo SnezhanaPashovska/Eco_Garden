@@ -97,6 +97,8 @@ class AdviceController extends AbstractController
         return new JsonResponse($jsonContent, Response::HTTP_OK, [], true);
     }
 
+    //POST
+
     #[Route('/api/conseil', name: "createAdvice", methods: [Request::METHOD_POST])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour ajouter un conseil')]
     public function createAdvice(Request $request, SerializerInterface $serializer, MonthRepository $monthRepository, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator): JsonResponse
